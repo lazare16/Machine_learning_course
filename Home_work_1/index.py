@@ -84,13 +84,33 @@
 #     print('No')
 
 # 8
-import random
+# import random
 
-numbers = [1, 4, 6, 3, 9, 2, 6]
+# numbers = [1, 4, 6, 3, 9, 2, 6]
 
-random.shuffle(numbers)
+# random.shuffle(numbers)
 
-print(numbers)
+# print(numbers)
+
+# 9
+# list_1 = [1, 4, 5, 6, 4, 3, 7]
+# list_2 = [4, 2, 5, 6, 2, 8, 9]
+
+# def match(list_1, list_2):
+#     # Check if there is any common element in the two lists
+#     if any(digit in list_2 for digit in list_1):
+#         print('Some of the numbers do match!')
+#     else:
+#         print('Numbers do not match')
+
+# match(list_1, list_2)
+
+# 10
+for number in range(20, 126):
+    if number % 5 == 0:
+        print(number)
+
+
 
 
 
