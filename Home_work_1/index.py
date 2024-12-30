@@ -75,14 +75,22 @@
 #     print("No")
 
 # 7
-extensions = ['txt', 'jpg', 'gif', 'html']
-user_input = input('Enter file name: ')
+# extensions = ['txt', 'jpg', 'gif', 'html']
+# user_input = input('Enter file name: ')
 
-# Extract the file extension and check if it's in the list
-if any(user_input.endswith(f".{ext}") for ext in extensions):
-    print('Yes')
-else:
-    print('No')
+# if any(user_input.endswith(f".{ext}") for ext in extensions):
+#     print('Yes')
+# else:
+#     print('No')
+
+# 8
+import random
+
+numbers = [1, 4, 6, 3, 9, 2, 6]
+
+random.shuffle(numbers)
+
+print(numbers)
 
 
 
