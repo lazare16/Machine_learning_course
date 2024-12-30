@@ -24,39 +24,66 @@
 # is_number_odd(3)
 
 # 5
-a, b, c, d, e, f, g, h, i, j = map(int, input('Insert 10 digits: ').split())
-numbers = [a, b, c, d, e, f, g, h, i, j]
+# a, b, c, d, e, f, g, h, i, j = map(int, input('Insert 10 digits: ').split())
+# numbers = [a, b, c, d, e, f, g, h, i, j]
 
 
-def arithmetic_mean(a, b, c, d, e, f, g, h, i, j):
-    ar_mean = (a + b + c + d + e + f + g + h + i + j) / 10
-    print(f'Arithmetic Mean: {ar_mean}')
-    return ar_mean
+# def arithmetic_mean(a, b, c, d, e, f, g, h, i, j):
+#     ar_mean = (a + b + c + d + e + f + g + h + i + j) / 10
+#     print(f'Arithmetic Mean: {ar_mean}')
+#     return ar_mean
 
-def median(numbers):
-    sorted_numbers = sorted(numbers)
-    n = len(sorted_numbers)
-    if n % 2 == 1:
-        median_value = sorted_numbers[n // 2]
-    else:
-        median_value = (sorted_numbers[n // 2 - 1] + sorted_numbers[n // 2]) / 2
-    print(f'Median: {median_value}')
-    return median_value
+# def median(numbers):
+#     sorted_numbers = sorted(numbers)
+#     n = len(sorted_numbers)
+#     if n % 2 == 1:
+#         median_value = sorted_numbers[n // 2]
+#     else:
+#         median_value = (sorted_numbers[n // 2 - 1] + sorted_numbers[n // 2]) / 2
+#     print(f'Median: {median_value}')
+#     return median_value
 
-def mode(numbers):
-    obj = {}
-    for num in numbers:
-        if not num in obj:
-            obj[num]=1
-        else:
-            obj[num]+=1
-    print(f'Median: {[g for g, l in obj.items() if  l == max(obj.values())]}')
-    return [g for g, l in obj.items() if  l == max(obj.values())]
+# def mode(numbers):
+#     obj = {}
+#     for num in numbers:
+#         if not num in obj:
+#             obj[num]=1
+#         else:
+#             obj[num]+=1
+#     print(f'Median: {[g for g, l in obj.items() if  l == max(obj.values())]}')
+#     return [g for g, l in obj.items() if  l == max(obj.values())]
 
 
-arithmetic_mean(*numbers)
-median(numbers)
-mode(numbers)
+# arithmetic_mean(*numbers)
+# median(numbers)
+# mode(numbers)
+
+#6
+# def isPalindrome(s):
+#     rev = ''.join(reversed(s))
+
+#     if (s == rev):
+#         return True
+#     return False
+
+# s = "123456"
+# ans = isPalindrome(s)
+
+# if (ans):
+#     print("Yes")
+# else:
+#     print("No")
+
+# 7
+extensions = ['txt', 'jpg', 'gif', 'html']
+user_input = input('Enter file name: ')
+
+# Extract the file extension and check if it's in the list
+if any(user_input.endswith(f".{ext}") for ext in extensions):
+    print('Yes')
+else:
+    print('No')
+
 
 
 
