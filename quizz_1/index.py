@@ -28,22 +28,41 @@
 # print(result_dict)
 
 # 3
-import numpy as np
-import random
+# import numpy as np
+# import random
 
-m, n = map(int, input().split())
+# while True:
+#     try:
+#         m, n = map(int, input('Please enter dimensions (separate digits using space): ').split())
+#         if m <= 0 or n <= 0:  
+#             raise ValueError("Dimensions must be positive integers.")
+#         break
+#     except ValueError as e:
+#         print(f"Invalid input: {e}. Please enter two positive integers separated by a space.")
 
-matrix = []
+# matrix = []
 
-for row in range(m):
-    a = []  # Corrected indentation here
+# for row in range(m):
+#     a = []
+#     for column in range(n):   
+#         a.append(random.randint(0, 100)) 
+#     matrix.append(a)
 
-    for column in range(n):   
-        a.append(random.randint(0, 100))
-    matrix.append(a)
+# for row in range(m):
+#     for column in range(n):
+#         print(matrix[row][column], end=" ")
+#     print()
 
-for row in range(m):
-    for column in range(n):
-        print(matrix[row][column], end=" ")
-    print()
+# 4
+import pandas as pd
+
+ford_cars = pd.read_excel("ford_escort.xlsx")
+
+ford_cars.columns = ford_cars.columns.str.strip()
+
+ford_cars['Distance km'] = ford_cars['Distance mile'] * 1.60934
+
+print(ford_cars)
+
+
 
