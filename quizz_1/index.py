@@ -56,13 +56,24 @@
 # 4
 import pandas as pd
 
+# Read the Excel file
 ford_cars = pd.read_excel("ford_escort.xlsx")
 
+# Strip any leading/trailing spaces from the column names
 ford_cars.columns = ford_cars.columns.str.strip()
 
-ford_cars['Distance km'] = ford_cars['Distance mile'] * 1.60934
+# Check if the 'Distance mile' column exists before converting
+if 'Distance mile' in ford_cars.columns:
+    ford_cars['Distance km'] = ford_cars['Distance mile'] * 1.60934
+else:
+    print("'Distance mile' column not found!")
 
+# Save the modified DataFrame to a CSV file
+ford_cars.to_csv("ford_escort_updated.csv", index=False)
+
+# Print the DataFrame
 print(ford_cars)
+
 
 
 
