@@ -77,35 +77,16 @@
 
 # 4
 import requests
+
 from bs4 import BeautifulSoup
 
-url = 'https://roamingo.com/'
+response = requests.get('https://partners.roamingo.com/en')
 
-response = requests.get(url)
+soup = BeautifulSoup(response.text, 'html.parser')
 
-if response.status_code == 200:
-    soup = BeautifulSoup(response.text, 'html.parser')
-    sim_wrapper = soup.find('div', class_='popularCountries_countries_wrapper__iBjva')
+first_header = soup.find('h1')
 
-    if sim_wrapper:
-        # Find all country items inside the wrapper div
-        esim = sim_wrapper.find_all('div', class_='countryItem_container__WhnsR')
-
-        # Iterate over each country item in 'esim'
-        for e in esim:
-            # Find the <p> tag inside the country item (which contains the price)
-            price = e.find('p')
-            
-            if price:
-                # If price is found, print it (or any other action you need)
-                print(price.get_text())
-            else:
-                # If no price is found
-                print('Price not found')
-    else:
-        print('Wrapper div not found')
-else:
-    print('Failed to retrieve the webpage')
+print('First <h1> tag text:', first_header.text)
 
 
 
