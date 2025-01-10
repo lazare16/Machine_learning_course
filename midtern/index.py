@@ -76,17 +76,64 @@
 #     print("Error: No data or insufficient data in the CSV file.")
 
 # 4
-import requests
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import pandas as pd
+import time
 
-from bs4 import BeautifulSoup
+# Initialize Selenium WebDriver
+service = Service(r"C:\Users\Lazare\Documents\Chrome-driver\chromedriver.exe")  # Add the actual WebDriver file
+driver = webdriver.Chrome(service=service)
 
-response = requests.get('https://partners.roamingo.com/en')
+# Define the URL of the website
+base_url = "https://zoommer.ge/"
 
-soup = BeautifulSoup(response.text, 'html.parser')
+# Open the website
+driver.get(base_url)
 
-first_header = soup.find('h1')
+# Wait for the page to load (adjust timeout as needed)
+wait = WebDriverWait(driver, 10)
+wait.until(EC.presence_of_element_located((By.CLASS_NAME, "sc-38bab3e0-0")))
 
-print('First <h1> tag text:', first_header.text)
+# Scroll down to load more products (if applicable)
+# Adjust the scrolling logic based on the website's behavior
+for _ in range(5):  # Adjust range for how much you want to scroll
+    driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+    time.sleep(2)  # Wait for new products to load
+
+# Extract product information
+products = []
+try:
+    product_elements = driver.find_elements(By.CLASS_NAME, "sc-38bab3e0-0")  # Update class based on site structure
+    for product in product_elements:
+        try:
+            name_element = product.find_element(By.CSS_SELECTOR, ".sc-38bab3e0-5 h2")  # Update selector
+            name = name_element.text.strip() if name_element else "No Name"
+
+            price_element = product.find_element(By.CSS_SELECTOR, ".sc-38bab3e0-6 h4")  # Update selector
+            price = price_element.text.strip() if price_element else "No Price"
+
+            # Add product data to the list
+            products.append({"Name": name, "Price": price})
+        except Exception as e:
+            print(f"Error extracting product details: {e}")
+except Exception as e:
+    print(f"Error locating products: {e}")
+
+# Save data to CSV
+if products:
+    df = pd.DataFrame(products)
+    df.to_csv("products_selenium.csv", index=False, encoding="utf-8")
+    print("Data saved to products_selenium.csv")
+else:
+    print("No products found")
+
+# Close the WebDriver
+driver.quit()
 
 
 
