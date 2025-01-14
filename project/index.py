@@ -1,3 +1,5 @@
+import requests
+from bs4 import BeautifulSoup
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -9,10 +11,73 @@ from sklearn.preprocessing import StandardScaler
 import re
 import joblib
 
+# ==================== Web Scraping ==================== #
+
+# URL of the page to scrape
+url = "https://coinmarketcap.com/"  # Replace with the correct URL if necessary
+
+# Fetch the page content
+response = requests.get(url)
+soup = BeautifulSoup(response.text, 'html.parser')
+
+# Find the table (update the class name if necessary)
+table = soup.find('table')
+if table is None:
+    print("Table not found on the page!")
+    exit()
+
+# Extract rows from the table
+rows = table.find_all('tr')[1:]  # Skip header row
+
+# Initialize a list to store the data
+crypto_data = []
+
+# Iterate over each row and extract the required information
+for row in rows:
+    columns = row.find_all('td')
+    if len(columns) < 10:  # Skip rows that don't have enough columns
+        continue
+    try:
+        rank = columns[1].get_text(strip=True) if len(columns) > 1 else "N/A"
+        name = columns[2].find('p', class_='coin-item-name').get_text(strip=True) if columns[2].find('p', class_='coin-item-name') else "N/A"
+        symbol = columns[2].find('p', class_='coin-item-symbol').get_text(strip=True) if columns[2].find('p', class_='coin-item-symbol') else "N/A"
+        price = columns[3].get_text(strip=True) if len(columns) > 3 else "N/A"
+        change_1h = columns[4].get_text(strip=True) if len(columns) > 4 else "N/A"
+        change_24h = columns[5].get_text(strip=True) if len(columns) > 5 else "N/A"
+        change_7d = columns[6].get_text(strip=True) if len(columns) > 6 else "N/A"
+        market_cap = columns[7].get_text(strip=True) if len(columns) > 7 else "N/A"
+        volume_24h = columns[8].find('p', class_='font_weight_500').get_text(strip=True) if columns[8].find('p', class_='font_weight_500') else "N/A"
+        supply = columns[9].get_text(strip=True) if len(columns) > 9 else "N/A"
+
+        # Append to the data list
+        crypto_data.append({
+            'Rank': rank,
+            'Name': name,
+            'Symbol': symbol,
+            'Price': price,
+            '1h Change': change_1h,
+            '24h Change': change_24h,
+            '7d Change': change_7d,
+            'Market Cap': market_cap,
+            '24h Volume': volume_24h,
+            'Circulating Supply': supply
+        })
+    except Exception as e:
+        print(f"Error processing row: {e}")
+        continue
+
+# Convert to a pandas DataFrame
+df = pd.DataFrame(crypto_data)
+
+# Save the data to a CSV file for further processing
+df.to_csv('crypto_data.csv', index=False)
+
+# ==================== Data Preprocessing ==================== #
+
 # Load the dataset
 df = pd.read_csv('crypto_data.csv')
 
-# Data Preprocessing
+# Clean and convert string values to numeric
 def clean_and_convert(value):
     """Clean and convert string values to numeric."""
     if isinstance(value, str):
@@ -48,7 +113,9 @@ X = scaler.fit_transform(X)
 # Split the data into training and testing sets
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# Model Training
+# ==================== Model Training ==================== #
+
+# Train a Random Forest Regressor
 model = RandomForestRegressor(n_estimators=200, random_state=42)
 model.fit(X_train, y_train)
 
@@ -66,10 +133,9 @@ print(f"Root Mean Squared Error (RMSE): {rmse}")
 joblib.dump(model, 'crypto_price_predictor.pkl')
 print("Model saved as 'crypto_price_predictor.pkl'")
 
-# ===================== Visualization ===================== #
+# ==================== Visualization ==================== #
 
 # 1. Correlation Heatmap
-# Ensure only numeric columns are used for the correlation matrix
 numeric_cols = df.select_dtypes(include=[np.number])  # Select only numeric columns
 correlation_matrix = numeric_cols.corr()
 
@@ -112,7 +178,6 @@ plt.suptitle("1-Hour Change vs. 24-Hour Change", y=1.02)
 plt.show()
 
 # 6. Price Over Rank (Line Plot with Names)
-# Ensure the 'Rank' column is numeric for plotting
 if 'Rank' in df.columns:
     df['Rank'] = pd.to_numeric(df['Rank'], errors='coerce')
     df_sorted = df.dropna(subset=['Rank']).sort_values(by='Rank')  # Drop NaN ranks
