@@ -86,9 +86,11 @@ plt.xlabel("Price (Log-Transformed)")
 plt.ylabel("Frequency")
 plt.show()
 
-# 3. Market Cap vs. Volume (Scatter Plot)
-plt.figure(figsize=(8, 5))
+# 3. Market Cap vs. Volume (Scatter Plot with Names)
+plt.figure(figsize=(10, 6))
 plt.scatter(df['Market Cap'], df['24h Volume'], alpha=0.5)
+for i in range(len(df)):
+    plt.text(df['Market Cap'].iloc[i], df['24h Volume'].iloc[i], df['Name'].iloc[i], fontsize=8, alpha=0.7)
 plt.title("Market Cap vs. 24h Volume")
 plt.xlabel("Market Cap (Log-Transformed)")
 plt.ylabel("24h Volume (Log-Transformed)")
@@ -109,13 +111,15 @@ sns.jointplot(data=df, x='1h Change', y='24h Change', kind='scatter', height=6, 
 plt.suptitle("1-Hour Change vs. 24-Hour Change", y=1.02)
 plt.show()
 
-# 6. Price Over Rank (Line Plot)
+# 6. Price Over Rank (Line Plot with Names)
 # Ensure the 'Rank' column is numeric for plotting
 if 'Rank' in df.columns:
     df['Rank'] = pd.to_numeric(df['Rank'], errors='coerce')
     df_sorted = df.dropna(subset=['Rank']).sort_values(by='Rank')  # Drop NaN ranks
-    plt.figure(figsize=(10, 5))
+    plt.figure(figsize=(12, 6))
     plt.plot(df_sorted['Rank'], df_sorted['Price'], marker='o')
+    for i in range(len(df_sorted)):
+        plt.text(df_sorted['Rank'].iloc[i], df_sorted['Price'].iloc[i], df_sorted['Name'].iloc[i], fontsize=8, alpha=0.7)
     plt.title("Price Over Rank")
     plt.xlabel("Rank")
     plt.ylabel("Price (Log-Transformed)")
