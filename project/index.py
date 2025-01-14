@@ -1,63 +1,65 @@
+import requests
+from bs4 import BeautifulSoup
 import pandas as pd
-import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import mean_squared_error, r2_score
-import numpy as np
 
-# Load the CSV file
-data = pd.read_csv('teams_data.csv')
+# URL of the page to scrape
+url = "https://coinmarketcap.com/"  # Replace with the correct URL if different
 
-# Convert columns to numeric for analysis
-data['Wins'] = pd.to_numeric(data['Wins'], errors='coerce')
-data['Losses'] = pd.to_numeric(data['Losses'], errors='coerce')
-data['Year'] = pd.to_numeric(data['Year'], errors='coerce')
+# Fetch the page content
+response = requests.get(url)
+soup = BeautifulSoup(response.text, 'html.parser')
 
-# Calculate Winning Percentage
-data['Winning_Percentage'] = data['Wins'] / (data['Wins'] + data['Losses']) * 100
+# Find the table (update the class name if necessary)
+table = soup.find('table')
+if table is None:
+    print("Table not found on the page!")
+    exit()
 
-# Drop rows with missing or infinite values (if any)
-data = data.dropna()
+# Extract rows from the table
+rows = table.find_all('tr')[1:]  # Skip header row
 
-# Features (X) and Target (y)
-X = data[['Losses', 'Year']]  # Use 'Losses' and 'Year' as features
-y = data['Winning_Percentage']
+# Initialize a list to store the data
+crypto_data = []
 
-# Split the data into train and test sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+# Iterate over each row and extract the required information
+for row in rows:
+    columns = row.find_all('td')
+    if len(columns) < 10:  # Skip rows that don't have enough columns
+        continue
+    try:
+        rank = columns[1].get_text(strip=True) if len(columns) > 1 else "N/A"
+        name = columns[2].find('p', class_='coin-item-name').get_text(strip=True) if columns[2].find('p', class_='coin-item-name') else "N/A"
+        symbol = columns[2].find('p', class_='coin-item-symbol').get_text(strip=True) if columns[2].find('p', class_='coin-item-symbol') else "N/A"
+        price = columns[3].get_text(strip=True) if len(columns) > 3 else "N/A"
+        change_1h = columns[4].get_text(strip=True) if len(columns) > 4 else "N/A"
+        change_24h = columns[5].get_text(strip=True) if len(columns) > 5 else "N/A"
+        change_7d = columns[6].get_text(strip=True) if len(columns) > 6 else "N/A"
+        market_cap = columns[7].get_text(strip=True) if len(columns) > 7 else "N/A"
+        volume_24h = columns[8].find('p', class_='font_weight_500').get_text(strip=True) if columns[8].find('p', class_='font_weight_500') else "N/A"
+        supply = columns[9].get_text(strip=True) if len(columns) > 9 else "N/A"
 
-# Create and train a Random Forest Regressor
-model = RandomForestRegressor(random_state=42)
-model.fit(X_train, y_train)
+        # Append to the data list
+        crypto_data.append({
+            'Rank': rank,
+            'Name': name,
+            'Symbol': symbol,
+            'Price': price,
+            '1h Change': change_1h,
+            '24h Change': change_24h,
+            '7d Change': change_7d,
+            'Market Cap': market_cap,
+            '24h Volume': volume_24h,
+            'Circulating Supply': supply
+        })
+    except Exception as e:
+        print(f"Error processing row: {e}")
+        continue
 
-# Make predictions
-y_pred = model.predict(X_test)
+# Convert to a pandas DataFrame
+df = pd.DataFrame(crypto_data)
 
-# Evaluate the model
-mse = mean_squared_error(y_test, y_pred)
-r2 = r2_score(y_test, y_pred)
+# Display the data
+print(df)
 
-print("Mean Squared Error:", mse)
-print("R-squared Score:", r2)
-
-# Scatter Plot of Actual vs Predicted Winning Percentages
-plt.figure(figsize=(10, 6))
-plt.scatter(y_test, y_pred, alpha=0.7, edgecolor='k')
-plt.plot([min(y_test), max(y_test)], [min(y_test), max(y_test)], color='red', linestyle='--', linewidth=2)
-plt.title('Actual vs Predicted Winning Percentages', fontsize=16)
-plt.xlabel('Actual Winning Percentage', fontsize=12)
-plt.ylabel('Predicted Winning Percentage', fontsize=12)
-plt.grid(True)
-plt.show()
-
-# Feature Importance
-importances = model.feature_importances_
-feature_names = X.columns
-
-plt.figure(figsize=(8, 5))
-plt.bar(feature_names, importances, color='skyblue')
-plt.title('Feature Importance', fontsize=16)
-plt.xlabel('Features', fontsize=12)
-plt.ylabel('Importance', fontsize=12)
-plt.grid(True)
-plt.show()
+# Optionally, save the data to a CSV file
+df.to_csv('crypto_data.csv', index=False)
