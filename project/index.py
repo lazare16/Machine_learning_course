@@ -10,22 +10,19 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error
 from sklearn.preprocessing import StandardScaler
 import re
 
-# ==================== Web Scraping ==================== #
 url = "https://coinmarketcap.com/"  
 response = requests.get(url)
 soup = BeautifulSoup(response.text, 'html.parser')
 
-# Find the table
+
 table = soup.find('table')
 if table is None:
     print("Table not found on the page!")
     exit()
 
-# Extract rows from the table
 rows = table.find_all('tr')[1:] 
 crypto_data = []
 
-# Iterate through rows to extract data
 for row in rows:
     columns = row.find_all('td')
     if len(columns) < 10:  
@@ -59,70 +56,54 @@ for row in rows:
         print(f"Error processing row: {e}")
         continue
 
-# Convert to DataFrame
 df = pd.DataFrame(crypto_data)
 
-# Save to CSV
 df.to_csv('crypto_data.csv', index=False)
 
-# ==================== Data Preprocessing ==================== #
 df = pd.read_csv('crypto_data.csv')
 
-# Function to clean and convert string values to numeric
 def clean_and_convert(value):
     if isinstance(value, str):
-        value = re.sub(r'[^\d.-]', '', value)  # Remove non-numeric characters
+        value = re.sub(r'[^\d.-]', '', value)  
         try:
             return float(value)
         except ValueError:
             return np.nan
     return value
 
-# Apply cleaning to numeric columns
 for col in ['Price', '1h Change', '24h Change', '7d Change', 'Market Cap', '24h Volume', 'Circulating Supply']:
     df[col] = df[col].apply(clean_and_convert)
 
-# Drop rows with missing values
 df = df.dropna()
 
-# Log transformation for skewed data
 for col in ['Price', 'Market Cap', '24h Volume']:
     df[col] = np.log1p(df[col])
 
-# Feature engineering: selecting features and target
 features = ['1h Change', '24h Change', '7d Change', 'Market Cap', '24h Volume', 'Circulating Supply']
 target = 'Price'
 
 X = df[features]
 y = df[target]
 
-# Standardize the features
 scaler = StandardScaler()
 X = scaler.fit_transform(X)
 
-# Split the data into training and testing sets
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# ==================== Model Training ==================== #
 model = RandomForestRegressor(n_estimators=200, random_state=42)
 model.fit(X_train, y_train)
 
-# Make predictions
 y_pred = model.predict(X_test)
 
-# ==================== Print Results ==================== #
 print("Predicted Prices (Log-Transformed):")
 print(y_pred)
 
-# Print evaluation metrics
 mae = mean_absolute_error(y_test, y_pred)
 rmse = np.sqrt(mean_squared_error(y_test, y_pred))
 print(f"Mean Absolute Error (MAE): {mae}")
 print(f"Root Mean Squared Error (RMSE): {rmse}")
 
-# ==================== Visualization ==================== #
-# Correlation Heatmap
-numeric_cols = df.select_dtypes(include=[np.number])  # Select only numeric columns
+numeric_cols = df.select_dtypes(include=[np.number])  
 correlation_matrix = numeric_cols.corr()
 
 plt.figure(figsize=(10, 6))
@@ -130,7 +111,7 @@ sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', fmt=".2f")
 plt.title("Correlation Heatmap")
 plt.show()
 
-# Price Distribution
+# ფასების განაწილება
 plt.figure(figsize=(8, 5))
 plt.hist(df['Price'], bins=30, edgecolor='k', alpha=0.7)
 plt.title("Price Distribution")
@@ -138,7 +119,7 @@ plt.xlabel("Price (Log-Transformed)")
 plt.ylabel("Frequency")
 plt.show()
 
-# Market Cap vs. Volume Scatter Plot
+# ბაზრის კაპიტალიზაციის და მოცულობის გაბნევის დიაგრამა.
 plt.figure(figsize=(10, 6))
 plt.scatter(df['Market Cap'], df['24h Volume'], alpha=0.5)
 for i in range(len(df)):
@@ -148,7 +129,7 @@ plt.xlabel("Market Cap (Log-Transformed)")
 plt.ylabel("24h Volume (Log-Transformed)")
 plt.show()
 
-# Feature Importance
+# ფუნქციის მნიშვნელოვანობა
 importances = model.feature_importances_
 feature_names = features
 plt.figure(figsize=(8, 5))
@@ -163,7 +144,7 @@ sns.jointplot(data=df, x='1h Change', y='24h Change', kind='scatter', height=6, 
 plt.suptitle("1-Hour Change vs. 24-Hour Change", y=1.02)
 plt.show()
 
-# Price Over Rank
+# ფასი რეიტინგითან მიმართებაში
 if 'Rank' in df.columns:
     df['Rank'] = pd.to_numeric(df['Rank'], errors='coerce')
     df_sorted = df.dropna(subset=['Rank']).sort_values(by='Rank')  # Drop NaN ranks
