@@ -9,33 +9,26 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 from sklearn.preprocessing import StandardScaler
 import re
-import joblib
 
 # ==================== Web Scraping ==================== #
-
-# URL of the page to scrape
-url = "https://coinmarketcap.com/"  # Replace with the correct URL if necessary
-
-# Fetch the page content
+url = "https://coinmarketcap.com/"  
 response = requests.get(url)
 soup = BeautifulSoup(response.text, 'html.parser')
 
-# Find the table (update the class name if necessary)
+# Find the table
 table = soup.find('table')
 if table is None:
     print("Table not found on the page!")
     exit()
 
 # Extract rows from the table
-rows = table.find_all('tr')[1:]  # Skip header row
-
-# Initialize a list to store the data
+rows = table.find_all('tr')[1:] 
 crypto_data = []
 
-# Iterate over each row and extract the required information
+# Iterate through rows to extract data
 for row in rows:
     columns = row.find_all('td')
-    if len(columns) < 10:  # Skip rows that don't have enough columns
+    if len(columns) < 10:  
         continue
     try:
         rank = columns[1].get_text(strip=True) if len(columns) > 1 else "N/A"
@@ -49,7 +42,7 @@ for row in rows:
         volume_24h = columns[8].find('p', class_='font_weight_500').get_text(strip=True) if columns[8].find('p', class_='font_weight_500') else "N/A"
         supply = columns[9].get_text(strip=True) if len(columns) > 9 else "N/A"
 
-        # Append to the data list
+        # Append data to list
         crypto_data.append({
             'Rank': rank,
             'Name': name,
@@ -66,20 +59,17 @@ for row in rows:
         print(f"Error processing row: {e}")
         continue
 
-# Convert to a pandas DataFrame
+# Convert to DataFrame
 df = pd.DataFrame(crypto_data)
 
-# Save the data to a CSV file for further processing
+# Save to CSV
 df.to_csv('crypto_data.csv', index=False)
 
 # ==================== Data Preprocessing ==================== #
-
-# Load the dataset
 df = pd.read_csv('crypto_data.csv')
 
-# Clean and convert string values to numeric
+# Function to clean and convert string values to numeric
 def clean_and_convert(value):
-    """Clean and convert string values to numeric."""
     if isinstance(value, str):
         value = re.sub(r'[^\d.-]', '', value)  # Remove non-numeric characters
         try:
@@ -92,14 +82,14 @@ def clean_and_convert(value):
 for col in ['Price', '1h Change', '24h Change', '7d Change', 'Market Cap', '24h Volume', 'Circulating Supply']:
     df[col] = df[col].apply(clean_and_convert)
 
-# Drop rows with missing or invalid values
+# Drop rows with missing values
 df = df.dropna()
 
 # Log transformation for skewed data
 for col in ['Price', 'Market Cap', '24h Volume']:
     df[col] = np.log1p(df[col])
 
-# Feature Engineering: Select relevant features and target
+# Feature engineering: selecting features and target
 features = ['1h Change', '24h Change', '7d Change', 'Market Cap', '24h Volume', 'Circulating Supply']
 target = 'Price'
 
@@ -114,28 +104,24 @@ X = scaler.fit_transform(X)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 # ==================== Model Training ==================== #
-
-# Train a Random Forest Regressor
 model = RandomForestRegressor(n_estimators=200, random_state=42)
 model.fit(X_train, y_train)
 
-# Predictions
+# Make predictions
 y_pred = model.predict(X_test)
 
-# Evaluation
+# ==================== Print Results ==================== #
+print("Predicted Prices (Log-Transformed):")
+print(y_pred)
+
+# Print evaluation metrics
 mae = mean_absolute_error(y_test, y_pred)
 rmse = np.sqrt(mean_squared_error(y_test, y_pred))
-
 print(f"Mean Absolute Error (MAE): {mae}")
 print(f"Root Mean Squared Error (RMSE): {rmse}")
 
-# Save the trained model
-joblib.dump(model, 'crypto_price_predictor.pkl')
-print("Model saved as 'crypto_price_predictor.pkl'")
-
 # ==================== Visualization ==================== #
-
-# 1. Correlation Heatmap
+# Correlation Heatmap
 numeric_cols = df.select_dtypes(include=[np.number])  # Select only numeric columns
 correlation_matrix = numeric_cols.corr()
 
@@ -144,7 +130,7 @@ sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', fmt=".2f")
 plt.title("Correlation Heatmap")
 plt.show()
 
-# 2. Price Distribution (Histogram)
+# Price Distribution
 plt.figure(figsize=(8, 5))
 plt.hist(df['Price'], bins=30, edgecolor='k', alpha=0.7)
 plt.title("Price Distribution")
@@ -152,7 +138,7 @@ plt.xlabel("Price (Log-Transformed)")
 plt.ylabel("Frequency")
 plt.show()
 
-# 3. Market Cap vs. Volume (Scatter Plot with Names)
+# Market Cap vs. Volume Scatter Plot
 plt.figure(figsize=(10, 6))
 plt.scatter(df['Market Cap'], df['24h Volume'], alpha=0.5)
 for i in range(len(df)):
@@ -162,7 +148,7 @@ plt.xlabel("Market Cap (Log-Transformed)")
 plt.ylabel("24h Volume (Log-Transformed)")
 plt.show()
 
-# 4. Feature Importance (Bar Plot)
+# Feature Importance
 importances = model.feature_importances_
 feature_names = features
 plt.figure(figsize=(8, 5))
@@ -172,12 +158,12 @@ plt.xlabel("Importance Score")
 plt.ylabel("Features")
 plt.show()
 
-# 5. 1-Hour Change vs. 24-Hour Change (Joint Plot)
+#1 საათის ცვლილება vs 24 საათი
 sns.jointplot(data=df, x='1h Change', y='24h Change', kind='scatter', height=6, color='blue')
 plt.suptitle("1-Hour Change vs. 24-Hour Change", y=1.02)
 plt.show()
 
-# 6. Price Over Rank (Line Plot with Names)
+# Price Over Rank
 if 'Rank' in df.columns:
     df['Rank'] = pd.to_numeric(df['Rank'], errors='coerce')
     df_sorted = df.dropna(subset=['Rank']).sort_values(by='Rank')  # Drop NaN ranks
@@ -190,7 +176,4 @@ if 'Rank' in df.columns:
     plt.ylabel("Price (Log-Transformed)")
     plt.show()
 
-# 7. Pairplot for All Features
-sns.pairplot(df[['1h Change', '24h Change', '7d Change', 'Market Cap', '24h Volume', 'Price']], diag_kind='kde')
-plt.suptitle("Pairplot for Features", y=1.02)
-plt.show()
+
