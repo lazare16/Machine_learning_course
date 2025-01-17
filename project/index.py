@@ -10,19 +10,16 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error
 from sklearn.preprocessing import StandardScaler
 import re
 
-# ==================== Web Scraping ==================== #
 url = "https://coinmarketcap.com/"
 response = requests.get(url)
 soup = BeautifulSoup(response.text, 'html.parser')
 
-# Extract the table from the page
 table = soup.find('table')
 if table is None:
     print("Table not found on the page!")
     exit()
 
-# Extract rows from the table
-rows = table.find_all('tr')[1:]  # Skip the header row
+rows = table.find_all('tr')[1:]  
 crypto_data = []
 
 for row in rows:
@@ -41,7 +38,6 @@ for row in rows:
         volume_24h = columns[8].find('p', class_='font_weight_500').get_text(strip=True) if columns[8].find('p', class_='font_weight_500') else "N/A"
         supply = columns[9].get_text(strip=True) if len(columns) > 9 else "N/A"
 
-        # Append data to list
         crypto_data.append({
             'Rank': rank,
             'Name': name,
@@ -58,65 +54,53 @@ for row in rows:
         print(f"Error processing row: {e}")
         continue
 
-# Convert the data to a DataFrame
 df = pd.DataFrame(crypto_data)
 
-# Save the raw data to CSV (optional)
 df.to_csv('crypto_data.csv', index=False)
 
-# ==================== Data Preprocessing ==================== #
 df = pd.read_csv('crypto_data.csv')
 
-# Clean and convert string values to numeric
 def clean_and_convert(value):
     if isinstance(value, str):
-        value = re.sub(r'[^\d.-]', '', value)  # Remove non-numeric characters
+        value = re.sub(r'[^\d.-]', '', value)  
         try:
             return float(value)
         except ValueError:
             return np.nan
     return value
 
-# Apply cleaning to relevant columns
 for col in ['Price', '1h Change', '24h Change', '7d Change', 'Market Cap', '24h Volume', 'Circulating Supply']:
     df[col] = df[col].apply(clean_and_convert)
 
-# Drop rows with missing values
 df = df.dropna()
 
-# Log transformation for skewed data
 for col in ['Price', 'Market Cap', '24h Volume']:
     df[col] = np.log1p(df[col])
 
-# Prepare features and target
 features = ['1h Change', '24h Change', '7d Change', 'Market Cap', '24h Volume', 'Circulating Supply']
 target = 'Price'
 
 X = df[features]
 y = df[target]
 
-# Standardize the features
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
 
-# Split data for training and testing
 X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
 
-# ==================== Model Training ==================== #
 model = RandomForestRegressor(n_estimators=200, random_state=42)
 model.fit(X_train, y_train)
 
-# Predict prices for the entire dataset
 df['Predicted Price (Log-Transformed)'] = model.predict(X_scaled)
 
-# Reverse log transformation to get actual prices
+
 df['Predicted Price'] = np.expm1(df['Predicted Price (Log-Transformed)'])
 
-# ==================== Print Predictions ==================== #
+
 print("\nPredicted Prices for Cryptocurrencies:")
 print(df[['Name', 'Symbol', 'Predicted Price']])
 
-# ==================== Evaluation Metrics ==================== #
+
 y_test_pred = model.predict(X_test)
 mae = mean_absolute_error(y_test, y_test_pred)
 rmse = np.sqrt(mean_squared_error(y_test, y_test_pred))
@@ -124,6 +108,64 @@ rmse = np.sqrt(mean_squared_error(y_test, y_test_pred))
 print(f"\nMean Absolute Error (MAE): {mae}")
 print(f"Root Mean Squared Error (RMSE): {rmse}")
 
-# Save the predictions to a CSV file
+
 df[['Name', 'Symbol', 'Predicted Price']].to_csv('predicted_crypto_prices.csv', index=False)
 print("\nPredicted prices saved to 'predicted_crypto_prices.csv'.")
+
+
+# 1. კორელაციის სითბური რუკა
+numeric_cols = df.select_dtypes(include=[np.number])  
+correlation_matrix = numeric_cols.corr()
+
+plt.figure(figsize=(10, 6))
+sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', fmt=".2f")
+plt.title("Correlation Heatmap")
+plt.show()
+
+# 2. ფასების გადანაწილება
+plt.figure(figsize=(8, 5))
+plt.hist(df['Price'], bins=30, edgecolor='k', alpha=0.7)
+plt.title("Price Distribution")
+plt.xlabel("Price (Log-Transformed)")
+plt.ylabel("Frequency")
+plt.show()
+
+# 3. გრაფიკი საბაზრო კაპიტალიზაციისა და მოცულობის გაბნევის შესახებ
+plt.figure(figsize=(10, 6))
+plt.scatter(df['Market Cap'], df['24h Volume'], alpha=0.5)
+for i in range(len(df)):
+    plt.text(df['Market Cap'].iloc[i], df['24h Volume'].iloc[i], df['Name'].iloc[i], fontsize=8, alpha=0.7)
+plt.title("Market Cap vs. 24h Volume")
+plt.xlabel("Market Cap (Log-Transformed)")
+plt.ylabel("24h Volume (Log-Transformed)")
+plt.show()
+
+# 4. ფუნქციის მნიშვნელობა
+importances = model.feature_importances_
+feature_names = features
+plt.figure(figsize=(8, 5))
+plt.barh(feature_names, importances, color='skyblue')
+plt.title("Feature Importance")
+plt.xlabel("Importance Score")
+plt.ylabel("Features")
+plt.show()
+
+# 5. 1 საათიანი ცვლილება  vs. 24 საათიანი ცვლილება
+sns.jointplot(data=df, x='1h Change', y='24h Change', kind='scatter', height=6, color='blue')
+plt.suptitle("1-Hour Change vs. 24-Hour Change", y=1.02)
+plt.show()
+
+# 6. ფასი რეიტინგთან მიმართებაში
+if 'Rank' in df.columns:
+    df['Rank'] = pd.to_numeric(df['Rank'], errors='coerce')
+    df_sorted = df.dropna(subset=['Rank']).sort_values(by='Rank') 
+    plt.figure(figsize=(12, 6))
+    plt.plot(df_sorted['Rank'], df_sorted['Price'], marker='o')
+    for i in range(len(df_sorted)):
+        plt.text(df_sorted['Rank'].iloc[i], df_sorted['Price'].iloc[i], df_sorted['Name'].iloc[i], fontsize=8, alpha=0.7)
+    plt.title("Price Over Rank")
+    plt.xlabel("Rank")
+    plt.ylabel("Price (Log-Transformed)")
+    plt.show()
+
+
